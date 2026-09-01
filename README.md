@@ -18,8 +18,9 @@ against this binding's public API on every CI run
 Pending first publish: the package is **not on PyPI yet** — everything
 is prepared (maturin wheel config, one abi3 wheel per platform), and
 publishing waits on the first release tag (docs/PLAN.md §6). Until
-then, build from source — Python ≥ 3.11, Rust ≥ 1.88, and a C
-toolchain:
+then, build from source — Python 3.11–3.14 (the floor is 3.11; CI
+exercises 3.14/3.13/3.12/3.11 on every wheel platform), Rust ≥ 1.88,
+and a C toolchain:
 
 ```sh
 pip install maturin
