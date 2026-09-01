@@ -91,7 +91,13 @@ impl DbPy {
         slf
     }
 
-    fn __exit__(&self, _py: Python<'_>, _exc: Option<Bound<'_, PyAny>>) {
+    fn __exit__(
+        &self,
+        _py: Python<'_>,
+        _exc_type: Option<Bound<'_, PyAny>>,
+        _exc_value: Option<Bound<'_, PyAny>>,
+        _traceback: Option<Bound<'_, PyAny>>,
+    ) {
         self.close();
     }
 
