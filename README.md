@@ -78,6 +78,24 @@ Every failure raises a native `CorvidError` with the engine error
 the engine `message`. Type stubs ship in-package (`py.typed`) — the
 public API is fully typed.
 
+## Examples
+
+Six runnable programs in [`examples/`](examples/) — one per concept,
+deterministic output, executed on every CI leg:
+
+| File | What it shows |
+| --- | --- |
+| `quickstart.py` | open, insert 3 docs, kNN vector query, print |
+| `hybrid.py` | filter + vector + BM25, RRF fusion, MMR rerank, limit |
+| `vector_index.py` | in-memory / on-disk / binary-quantized HNSW vs exact, reopen |
+| `text_search.py` | BM25 ranking, English + CJK (bigram segmentation) |
+| `graph.py` | link/neighbors/traverse + the delete cascade |
+| `geo.py` | radius / bbox / nearest-k over real coordinates (haversine km) |
+
+```sh
+maturin develop && python examples/hybrid.py
+```
+
 ## Value mapping
 
 | Python | engine |
