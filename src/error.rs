@@ -353,7 +353,7 @@ mod variant_inventory {
         for ((inventory_name, (spec_name, code)), err) in ENGINE_VARIANT_INVENTORY
             .iter()
             .zip(SPEC_MAPPING.iter())
-            .zip(variants.into_iter())
+            .zip(variants)
         {
             assert_eq!(inventory_name, spec_name, "inventory/mapping order drift");
             let name = assert_mapped(&err); // wildcard trips on drift
