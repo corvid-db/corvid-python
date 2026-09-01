@@ -35,7 +35,7 @@ totals test pre-scans all files for exactly 256).
 Two architectures were on the table:
 
 1. **(chosen)** A Rust pyo3 crate that links the engine crate directly
-   (`corvid = { git = "https://github.com/corvid-db/corvid.git", tag = "v0.2.1" }`
+   (`corvid = { git = "https://github.com/corvid-db/corvid.git", tag = "v0.2.2" }`
    — corvid is not on crates.io) and exposes the OOP surface through
    native pyo3 classes, built into a Python extension module by
    maturin.

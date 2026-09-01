@@ -21,7 +21,7 @@ pyo3 = { version = "0.29", features = ["abi3-py311"] }
 
 # The engine, pinned to the exact release tag (docs/PLAN.md §2: the
 # binding pins exact engine tags; corvid is not on crates.io).
-corvid = { git = "https://github.com/corvid-db/corvid.git", tag = "v0.2.1" }
+corvid = { git = "https://github.com/corvid-db/corvid.git", tag = "v0.2.2" }
 
 # `extension-module` is enabled only when building the wheel (pyproject
 # [tool.maturin] features), so `cargo clippy`/`cargo check` still link

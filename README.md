@@ -123,6 +123,17 @@ a float), so the mapping is a clean bijection — there is no
 Int/Float collapse and no typed-float escape hatch (the JS binding
 needs `CorvidFloat` for CAS/unique/group-key corners).
 
+## Surface manifest (docs/SURFACE.tsv)
+
+Every construct of the engine's public surface (the radar-enforced list the
+engine publishes as `scripts/bindings/surface.tsv` at each release tag) is
+resolved in `docs/SURFACE.tsv`: the Python API exposing it plus the test that
+proves it (golden fixture line references), or `N/A` + reason where the v1
+binding deliberately does not expose it. `scripts/surface-gate.sh` fails CI
+when a line is unresolved, a cell is empty, or the N/A count drifts from the
+committed baseline — so an engine pin bump that changes the surface lands in
+this gate, not in a user's bug report.
+
 ## Development
 
 ```sh
