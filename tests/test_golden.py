@@ -1,7 +1,8 @@
 """test_golden.py — the golden-suite port for corvid-python.
 
 Replays the engine's committed fixture suite (tests/golden/*.txt —
-vendored verbatim from the corvid v0.2.1 release, the same files the
+vendored verbatim from the corvid v0.2.2 release, the pinned engine
+tag (Cargo.toml) and the same files the
 C smoke suite drives) against this binding's public OOP surface
 (``corvid``): one OP<TAB>args<TAB>expected line at a time, every line
 dispatched, every expectation checked. The fixtures are test-time

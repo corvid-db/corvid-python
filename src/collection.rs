@@ -252,25 +252,22 @@ impl CollectionPy {
 
     /// Delete every document matching `pred` (see `field()`); returns
     /// the removed count.
-    fn delete_where(&self, pred: &Pred) -> PyResult<u32> {
+    fn delete_where(&self, pred: &Pred) -> PyResult<usize> {
         Ok(self.with_coll(|coll| {
             coll.delete_where(pred.pred.clone())
-                .map(|n| n as u32)
                 .map_err(CorvidErr::from)
         })?)
     }
 
     /// Delete a batch of keys; returns the removed count.
-    fn delete_batch(&self, keys: Vec<Bound<'_, PyAny>>) -> PyResult<u32> {
+    fn delete_batch(&self, keys: Vec<Bound<'_, PyAny>>) -> PyResult<usize> {
         Ok(self.with_coll(|coll| {
             let mut ks: Vec<Vec<u8>> = Vec::with_capacity(keys.len());
             for k in &keys {
                 ks.push(key_from_py(k)?);
             }
             let refs: Vec<&[u8]> = ks.iter().map(|k| k.as_slice()).collect();
-            coll.delete_batch(&refs)
-                .map(|n| n as u32)
-                .map_err(CorvidErr::from)
+            coll.delete_batch(&refs).map_err(CorvidErr::from)
         })?)
     }
 
@@ -310,12 +307,8 @@ impl CollectionPy {
     }
 
     /// Remove every expired key as of `now`; returns the purged count.
-    fn purge_expired(&self, now: i64) -> PyResult<u32> {
-        Ok(self.with_coll(|coll| {
-            coll.purge_expired(now)
-                .map(|n| n as u32)
-                .map_err(CorvidErr::from)
-        })?)
+    fn purge_expired(&self, now: i64) -> PyResult<usize> {
+        Ok(self.with_coll(|coll| coll.purge_expired(now).map_err(CorvidErr::from))?)
     }
 
     // -- reads ----------------------------------------------------------------

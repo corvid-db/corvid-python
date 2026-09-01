@@ -18,9 +18,9 @@ variants are additive later, decided by the FFI bench).
 | --- | --- |
 | The pyo3 crate (engine-binding layer AND idiom layer — see §3) | `src/*.rs` — `DbPy`/`CollectionPy`/`QueryPy`, value mapping, error mapping, predicates |
 | The public package | `python/corvid/__init__.py` re-exports `corvid._native`; `__init__.pyi` + `py.typed` carry the full typing |
-| The golden-suite port | `tests/test_golden.py` driving `tests/golden/*.txt` (vendored byte-identical from the v0.2.1 release — the same fixtures the C smoke suite and corvid-node run) |
+| The golden-suite port | `tests/test_golden.py` driving `tests/golden/*.txt` (vendored byte-identical from the v0.2.2 release — the pinned engine tag; the same fixtures the C smoke suite and corvid-node run) |
 | Packaging | `pyproject.toml` (maturin, one cp311-abi3 wheel per platform), README (install-pending note), LICENSE (MIT), `.gitignore` |
-| CI | `.github/workflows/ci.yml` — lint + build + golden suite × 4 platform legs × {3.11, 3.12} + `maturin build` smoke |
+| CI | `.github/workflows/ci.yml` — surface gate + lint + golden suite × 4 platform legs (linux-x64/arm64, macos-arm64, windows-x64) × {3.14, 3.13, 3.12, 3.11} + `maturin build` smoke |
 
 The golden suite: **256/256 fixture lines** across 8 files
 (values 42, mutations 70, queries 40, schema 28, graph 20, geo 19,
@@ -156,9 +156,15 @@ Documented corners:
   f32→f64 widening is lossless). Other `array` typecodes are rejected
   (`'d'` would silently lose f32 semantics). A `list[float]` is an
   engine `Array`, not a Vector — vectors are typed at construction.
-- **Depth cap**: both conversion directions cap nesting at 512 —
-  cyclic Python input or crafted dumps convert to a clean code-12
-  error instead of recursing toward stack overflow.
+- **Depth cap**: both conversion directions cap nesting at the engine's
+  own decode limit (`corvid::value::MAX_NESTING` = 128) — values are
+  stored encoded and decoded on every read, so a doc deeper than the
+  decoder's cap would store fine and then fail EVERY read (code 8).
+  Capping the converters at the same limit (same check, same starting
+  depth) makes converter-accepted == decodable: cyclic Python input or
+  crafted dumps convert to a clean code-12 error at the boundary,
+  before anything unreadable is stored
+  (tests/test_value_mapping.py::test_depth_129_rejected_at_insert_not_stored_unreadable).
 - **Keys** are `str` (UTF-8) or `bytes`/`bytearray` (raw); keys that
   are not valid UTF-8 come back as `bytes`.
 
@@ -214,4 +220,4 @@ Documented corners:
 | Variadic `and_`/`or_` (trailing underscores) | Python keywords; mirrors the JS binding's variadic `and`/`or` |
 | Counter + Arc exclusivity for `compact` | mirrors the ABI §4.13 gate exactly; pinned by admin.txt |
 | pyo3 0.29, maturin 1.x | current crates.io stable lines |
-| Vendored golden fixtures (byte-identical to the v0.2.1 tag) | stable text; the suite must run offline and per-PR (verified identical to `crates/corvid-ffi/golden/`) |
+| Vendored golden fixtures (byte-identical to the v0.2.2 tag — the pinned engine version) | stable text; the suite must run offline and per-PR (verified identical to `crates/corvid-ffi/golden/`) |

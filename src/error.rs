@@ -197,3 +197,174 @@ impl ErrorCode {
 }
 
 pub type CResult<T> = Result<T, CorvidErr>;
+
+#[cfg(test)]
+mod variant_inventory {
+    //! The FFI crate's variant-inventory discipline, ported (its
+    //! src/error.rs tests): the engine enum is `#[non_exhaustive]`,
+    //! and `From<Error> for CorvidErr` above ends in a wildcard arm
+    //! that would silently map an UNKNOWN future variant to code 4.
+    //! This snapshot test constructs one instance of every variant of
+    //! the REAL enum (the engine is compiled in — redb's public error
+    //! enums are the only constructors for the six passthrough
+    //! variants) and matches it through a wildcard-armed name
+    //! extractor, so:
+    //!
+    //! * removing/renaming an engine variant fails COMPILATION (the
+    //!   named arms in `From` and in `assert_mapped` below);
+    //! * a variant outside the pinned inventory trips the wildcard
+    //!   here, loudly, instead of silently reading as code 4;
+    //! * each known variant still maps to its frozen FFI code.
+    //!
+    //! An engine ADDITION is only caught once `every_engine_variant`
+    //! is extended in step — the same hand-maintained-list gap the
+    //! engine's `enum Error` doc comment points at (extend that list,
+    //! the `From` impl, and FFI.md §1.3 together).
+    use super::{CorvidErr, ErrCode};
+    use corvid::Error;
+
+    /// The pinned engine tag's variant set, in frozen code order
+    /// 1..=18 (FFI.md §1.3 — the same table the C ABI pins).
+    const ENGINE_VARIANT_INVENTORY: [&str; 18] = [
+        "Database",
+        "Transaction",
+        "Table",
+        "Storage",
+        "Commit",
+        "SetDurability",
+        "Compaction",
+        "Decode",
+        "CorruptIndex",
+        "ReservedCollection",
+        "InvalidName",
+        "InvalidArgument",
+        "IncompatibleFormat",
+        "EmptyIndexTraining",
+        "SchemaViolation",
+        "InvalidDump",
+        "BackupTargetExists",
+        "Io",
+    ];
+
+    /// The inventory in code order, as (name, ErrCode) pairs.
+    const SPEC_MAPPING: [(&str, ErrCode); 18] = [
+        ("Database", ErrCode::Database),
+        ("Transaction", ErrCode::Transaction),
+        ("Table", ErrCode::Table),
+        ("Storage", ErrCode::Storage),
+        ("Commit", ErrCode::Commit),
+        ("SetDurability", ErrCode::SetDurability),
+        ("Compaction", ErrCode::Compaction),
+        ("Decode", ErrCode::Decode),
+        ("CorruptIndex", ErrCode::CorruptIndex),
+        ("ReservedCollection", ErrCode::ReservedCollection),
+        ("InvalidName", ErrCode::InvalidName),
+        ("InvalidArgument", ErrCode::Argument),
+        ("IncompatibleFormat", ErrCode::IncompatibleFormat),
+        ("EmptyIndexTraining", ErrCode::EmptyIndexTraining),
+        ("SchemaViolation", ErrCode::SchemaViolation),
+        ("InvalidDump", ErrCode::InvalidDump),
+        ("BackupTargetExists", ErrCode::BackupTargetExists),
+        ("Io", ErrCode::Io),
+    ];
+
+    /// Match every engine variant by name, with a wildcard arm that
+    /// FAILS on anything outside the inventory — the drift detector.
+    fn assert_mapped(err: &Error) -> &'static str {
+        match err {
+            Error::Database(_) => "Database",
+            Error::Transaction(_) => "Transaction",
+            Error::Table(_) => "Table",
+            Error::Storage(_) => "Storage",
+            Error::Commit(_) => "Commit",
+            Error::SetDurability(_) => "SetDurability",
+            Error::Compaction(_) => "Compaction",
+            Error::Decode(_) => "Decode",
+            Error::CorruptIndex { .. } => "CorruptIndex",
+            Error::ReservedCollection(_) => "ReservedCollection",
+            Error::InvalidName(_) => "InvalidName",
+            Error::InvalidArgument(_) => "InvalidArgument",
+            Error::IncompatibleFormat { .. } => "IncompatibleFormat",
+            Error::EmptyIndexTraining => "EmptyIndexTraining",
+            Error::SchemaViolation(_) => "SchemaViolation",
+            Error::InvalidDump(_) => "InvalidDump",
+            Error::BackupTargetExists(_) => "BackupTargetExists",
+            Error::Io(_) => "Io",
+            unexpected => panic!(
+                "corvid::Error has a variant outside ENGINE_VARIANT_INVENTORY \
+                 ({unexpected:?}) — extend the inventory, the From<Error> mapping, \
+                 and ErrCode before shipping (an unknown variant currently \
+                 surfaces as code 4 via the wildcard)"
+            ),
+        }
+    }
+
+    /// One constructible instance of every KNOWN engine variant, built
+    /// from redb's public error enums for the six passthrough variants
+    /// (the engine wraps them via `#[from]`).
+    fn every_engine_variant() -> Vec<Error> {
+        use redb::{
+            CommitError, CompactionError, DatabaseError, SetDurabilityError, StorageError,
+            TableError, TransactionError,
+        };
+        vec![
+            Error::Database(DatabaseError::DatabaseAlreadyOpen),
+            Error::Transaction(TransactionError::Storage(StorageError::DatabaseClosed)),
+            Error::Table(TableError::TableDoesNotExist("t".into())),
+            Error::Storage(StorageError::DatabaseClosed),
+            Error::Commit(CommitError::Storage(StorageError::DatabaseClosed)),
+            Error::SetDurability(SetDurabilityError::PersistentSavepointModified),
+            Error::Compaction(CompactionError::TransactionInProgress),
+            Error::Decode("bad bytes".into()),
+            Error::CorruptIndex {
+                context: "truncated".into(),
+            },
+            Error::ReservedCollection("__x".into()),
+            Error::InvalidName("a__b".into()),
+            Error::InvalidArgument("lambda out of range".into()),
+            Error::IncompatibleFormat {
+                found: 1,
+                expected: 2,
+            },
+            Error::EmptyIndexTraining,
+            Error::SchemaViolation("field f".into()),
+            Error::InvalidDump("unknown version".into()),
+            Error::BackupTargetExists("/tmp/old".into()),
+            Error::Io(std::io::Error::other("gone")),
+        ]
+    }
+
+    /// The snapshot: the pinned engine tag's variant set maps onto the
+    /// frozen code table exactly — inventory == ErrCode == engine, and
+    /// nothing falls through the `From` wildcard.
+    #[test]
+    fn variant_inventory_matches_the_engine_and_the_mapping() {
+        let variants = every_engine_variant();
+        assert_eq!(
+            variants.len(),
+            ENGINE_VARIANT_INVENTORY.len(),
+            "constructor list and inventory disagree"
+        );
+        assert_eq!(
+            ENGINE_VARIANT_INVENTORY.len(),
+            SPEC_MAPPING.len(),
+            "inventory and spec mapping tables disagree"
+        );
+        for ((inventory_name, (spec_name, code)), err) in ENGINE_VARIANT_INVENTORY
+            .iter()
+            .zip(SPEC_MAPPING.iter())
+            .zip(variants.into_iter())
+        {
+            assert_eq!(inventory_name, spec_name, "inventory/mapping order drift");
+            let name = assert_mapped(&err); // wildcard trips on drift
+            assert_eq!(name, *inventory_name);
+            let mapped = CorvidErr::from(err);
+            assert_eq!(
+                mapped.code,
+                code.num(),
+                "mapping drift for {name}: {:?}",
+                mapped.code
+            );
+        }
+    }
+}

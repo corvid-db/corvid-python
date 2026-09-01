@@ -34,9 +34,13 @@
 //! `Int(2)`, `2.0` to engine `Float(2.0)`, and each reads back as
 //! itself (the JS binding needs `CorvidFloat` for this corner).
 //!
-//! Both directions carry a nesting-depth cap (`MAX_DEPTH`): deeper
-//! values (or cyclic Python input) convert to a clean InvalidArgument
-//! error rather than recursing toward a stack overflow.
+//! Both directions carry a nesting-depth cap (`MAX_DEPTH`), set to the
+//! engine's own decode limit (`corvid::value::MAX_NESTING`): values are
+//! stored encoded and decoded on every read, so anything the converter
+//! accepted but the decoder rejects would store fine and then fail
+//! EVERY read. Deeper values (or cyclic Python input) convert to a
+//! clean InvalidArgument error rather than recursing toward a stack
+//! overflow — rejected at the boundary, before storage.
 
 use std::collections::BTreeMap;
 
@@ -46,12 +50,17 @@ use pyo3::types::{PyAny, PyByteArray, PyBytes, PyDict, PyFloat, PyInt, PyList, P
 
 use crate::error::{CResult, CorvidErr, ErrCode};
 
-/// Maximum container nesting the converters will walk. Deeper input
-/// (including cyclic Python containers, which are depth-unbounded) maps
-/// to a clean InvalidArgument instead of risking a stack overflow;
+/// Maximum container nesting the converters will walk — the engine's
+/// decode cap re-used verbatim (`corvid::value::MAX_NESTING`, engine
+/// src/value.rs: `Value::decode` rejects `depth > MAX_NESTING`, so a
+/// deeper doc would store fine and fail every read with code 8). Both
+/// directions check `depth > MAX_DEPTH` at the same starting depth the
+/// decoder does, so converter-accepted == decodable, exactly. Deeper
+/// input (including cyclic Python containers, which are
+/// depth-unbounded) maps to a clean InvalidArgument at the boundary;
 /// engine values deeper than this (only constructible via a crafted
 /// dump replay) fail the same way on the way out.
-const MAX_DEPTH: usize = 512;
+const MAX_DEPTH: usize = corvid::value::MAX_NESTING;
 
 fn argument(msg: &str) -> CorvidErr {
     CorvidErr::new(ErrCode::Argument, msg)

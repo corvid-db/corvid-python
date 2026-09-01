@@ -33,7 +33,7 @@ corvid::Predicate::In	WHERE	MAPPED	Predicate via field()/and_()/or_()/not_()	gol
 corvid::Predicate::Between	WHERE	MAPPED	Predicate via field()/and_()/or_()/not_()	golden:queries.txt:QF_* + golden:mutations.txt:DELETE_IN
 corvid::Predicate::StartsWith	WHERE	MAPPED	Predicate via field()/and_()/or_()/not_()	golden:queries.txt:QF_* + golden:mutations.txt:DELETE_IN
 corvid::Predicate::Contains	WHERE	MAPPED	Predicate via field()/and_()/or_()/not_()	golden:queries.txt:QF_* + golden:mutations.txt:DELETE_IN
-corvid::Predicate::GeoWithin	Geo	MAPPED	Predicate via field()/and_()/or_()/not_()	golden:queries.txt:QF_* + golden:mutations.txt:DELETE_IN
+corvid::Predicate::GeoWithin	Geo	MAPPED	Predicate via field()/and_()/or_()/not_()	golden:geo.txt:26 QF_GEO (the geo-predicate fixture line)
 corvid::Predicate::And	WHERE	MAPPED	Predicate via field()/and_()/or_()/not_()	golden:queries.txt:QF_* + golden:mutations.txt:DELETE_IN
 corvid::Predicate::Or	WHERE	MAPPED	Predicate via field()/and_()/or_()/not_()	golden:queries.txt:QF_* + golden:mutations.txt:DELETE_IN
 corvid::Predicate::Not	WHERE	MAPPED	Predicate via field()/and_()/or_()/not_()	golden:queries.txt:QF_* + golden:mutations.txt:DELETE_IN
@@ -44,7 +44,7 @@ corvid::field	WHERE	MAPPED	Predicate via field()/and_()/or_()/not_()	golden:quer
 corvid::filter::FieldRef	WHERE	MAPPED	Predicate via field()/and_()/or_()/not_()	golden:queries.txt:QF_* + golden:mutations.txt:DELETE_IN
 corvid::filter::FieldRef::eq	WHERE	MAPPED	Predicate via field()/and_()/or_()/not_()	golden:queries.txt:QF_* + golden:mutations.txt:DELETE_IN
 corvid::filter::FieldRef::ne	WHERE	MAPPED	Predicate via field()/and_()/or_()/not_()	golden:queries.txt:QF_* + golden:mutations.txt:DELETE_IN
-corvid::filter::FieldRef::lt	WHERE	MAPPED	Predicate via field()/and_()/or_()/not_()	golden:queries.txt:QF_* + golden:mutations.txt:DELETE_IN
+corvid::filter::FieldRef::lt	WHERE	MAPPED	Predicate via field()/and_()/or_()/not_()	tests/test_value_mapping.py::test_lt_predicate_executes (no fixture line dispatches lt; QF_AND uses ge/le)
 corvid::filter::FieldRef::le	WHERE	MAPPED	Predicate via field()/and_()/or_()/not_()	golden:queries.txt:QF_* + golden:mutations.txt:DELETE_IN
 corvid::filter::FieldRef::gt	WHERE	MAPPED	Predicate via field()/and_()/or_()/not_()	golden:queries.txt:QF_* + golden:mutations.txt:DELETE_IN
 corvid::filter::FieldRef::ge	WHERE	MAPPED	Predicate via field()/and_()/or_()/not_()	golden:queries.txt:QF_* + golden:mutations.txt:DELETE_IN
@@ -53,11 +53,11 @@ corvid::filter::FieldRef::is_in	WHERE	MAPPED	Predicate via field()/and_()/or_()/
 corvid::filter::FieldRef::between	WHERE	MAPPED	Predicate via field()/and_()/or_()/not_()	golden:queries.txt:QF_* + golden:mutations.txt:DELETE_IN
 corvid::filter::FieldRef::starts_with	WHERE	MAPPED	Predicate via field()/and_()/or_()/not_()	golden:queries.txt:QF_* + golden:mutations.txt:DELETE_IN
 corvid::filter::FieldRef::contains	WHERE	MAPPED	Predicate via field()/and_()/or_()/not_()	golden:queries.txt:QF_* + golden:mutations.txt:DELETE_IN
-corvid::filter::FieldRef::within_km	Geo	MAPPED	Predicate via field()/and_()/or_()/not_()	golden:queries.txt:QF_* + golden:mutations.txt:DELETE_IN
+corvid::filter::FieldRef::within_km	Geo	MAPPED	Predicate via field()/and_()/or_()/not_()	golden:geo.txt:26 QF_GEO (the geo-predicate fixture line)
 corvid::Metric	Vector search	MAPPED	Metric type ('cosine' | 'dot' | 'l2')	golden:queries.txt:QVEC
-corvid::Metric::Cosine	Vector search	MAPPED	Metric type ('cosine' | 'dot' | 'l2')	golden:queries.txt:QVEC
-corvid::Metric::Dot	Vector search	MAPPED	Metric type ('cosine' | 'dot' | 'l2')	golden:queries.txt:QVEC
-corvid::Metric::L2	Vector search	MAPPED	Metric type ('cosine' | 'dot' | 'l2')	golden:queries.txt:QVEC
+corvid::Metric::Cosine	Vector search	MAPPED	Metric type ('cosine' | 'dot' | 'l2')	golden:queries.txt:QVEC (query) + tests/test_value_mapping.py::test_vector_query_per_metric
+corvid::Metric::Dot	Vector search	MAPPED	Metric type ('cosine' | 'dot' | 'l2')	golden:schema.txt:31 IDX_VEC_Q (index creation) + tests/test_value_mapping.py::test_vector_query_per_metric (query; QVEC never runs dot)
+corvid::Metric::L2	Vector search	MAPPED	Metric type ('cosine' | 'dot' | 'l2')	golden:schema.txt:32 IDX_VEC_DISK (index creation) + tests/test_value_mapping.py::test_vector_query_per_metric (query; QVEC never runs l2)
 corvid::Metric::distance	Vector search	N/A	N/A	pure math helper, not a binding API; metric behavior surfaces via Query.vector metric + index creation
 corvid::distance::dot	Vector search	N/A	N/A	pure math helpers, not binding APIs; distance behavior surfaces via Query.vector
 corvid::distance::l2_squared	Vector search	N/A	N/A	pure math helpers, not binding APIs; distance behavior surfaces via Query.vector

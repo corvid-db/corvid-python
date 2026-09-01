@@ -23,6 +23,15 @@ pyo3 = { version = "0.29", features = ["abi3-py311"] }
 # binding pins exact engine tags; corvid is not on crates.io).
 corvid = { git = "https://github.com/corvid-db/corvid.git", tag = "v0.2.2" }
 
+[dev-dependencies]
+# Test-only: the variant-inventory snapshot test (src/error.rs)
+# constructs one instance of every engine error to pin the code
+# mapping; six of the eighteen variants wrap redb's passthrough error
+# types, and redb's public error enums are their only constructors.
+# Same requirement line the engine's workspace uses — one resolution
+# with the git dep (Cargo.lock unifies both to a single redb).
+redb = "4.1"
+
 # `extension-module` is enabled only when building the wheel (pyproject
 # [tool.maturin] features), so `cargo clippy`/`cargo check` still link
 # libpython and see the full API surface.

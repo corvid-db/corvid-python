@@ -17,6 +17,7 @@ version = "0.1.0"
 dependencies = [
  "corvid",
  "pyo3",
+ "redb",
 ]
 
 [[package]]
