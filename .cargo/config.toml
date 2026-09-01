@@ -1,0 +1,6 @@
+# Fetch git dependencies through the git CLI: this machine (and some
+# CI images) rewrite https://github.com/* to ssh://git@github.com/* and
+# cargo's built-in libgit2 fetcher cannot use the ssh-agent/keychain
+# the CLI uses. Harmless elsewhere.
+[net]
+git-fetch-with-cli = true
