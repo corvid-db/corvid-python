@@ -1,0 +1,38 @@
+[build-system]
+requires = ["maturin>=1.5,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "corvid-python"
+version = "0.1.0"
+description = "Python binding for the corvid embedded database — the engine compiled in via pyo3, exposed as idiomatic OOP"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.11"
+authors = [{ name = "corvid-db" }]
+repository = "https://github.com/corvid-db/corvid-python"
+keywords = ["database", "embedded", "vector", "search", "ai"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: MacOS :: MacOS X",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Rust",
+    "Topic :: Database",
+    "Topic :: Database :: Database Engines/Servers",
+]
+
+# One abi3 (cp311) wheel per platform covers every Python >= 3.11 —
+# the matrix in CI builds linux-x64/arm64, macos-arm64, windows-x64.
+[tool.maturin]
+python-source = "python"
+module-name = "corvid._native"
+features = ["pyo3/extension-module"]

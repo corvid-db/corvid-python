@@ -1,0 +1,81 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    # bash everywhere: wheel globs and paths behave the same on windows.
+    shell: bash
+
+jobs:
+  lint:
+    name: fmt + clippy
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo fmt --all -- --check
+      - run: cargo clippy --all-targets -- -D warnings
+
+  test:
+    name: golden suite — ${{ matrix.target }} / py${{ matrix.python }}
+    needs: lint
+    strategy:
+      fail-fast: false
+      matrix:
+        # The wheel platform matrix: linux-x64/arm64, macos-arm64,
+        # windows-x64 (macos-x64 retired with GitHub's macos-13 runners —
+        # no x86_64-darwin runner exists, same as corvid-node's matrix)
+        # × both supported minor lines.
+        target: [linux-x64, linux-arm64, macos-arm64, windows-x64]
+        python: ["3.11", "3.12"]
+        include:
+          - { target: linux-x64, runs-on: ubuntu-latest }
+          - { target: linux-arm64, runs-on: ubuntu-24.04-arm }
+          - { target: macos-arm64, runs-on: macos-latest }
+          - { target: windows-x64, runs-on: windows-latest }
+    runs-on: ${{ matrix.runs-on }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: python -m pip install --upgrade maturin pytest
+      - name: Build the extension (debug wheel — speed; release is the package job)
+        run: maturin build --debug --out wheels
+      - run: python -m pip install wheels/corvid_python-*.whl
+      - name: Golden suite (256 fixture lines through the OOP surface)
+        run: python -m pytest tests -q
+
+  package:
+    name: maturin build smoke
+    needs: lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --upgrade maturin pytest
+      - name: Release wheel build (the publish artifact shape)
+        run: maturin build --release --out dist
+      - run: python -m pip install dist/corvid_python-*.whl
+      - run: python -c "import corvid; assert corvid.ffi_version() == 1"
+      - run: python -m pytest tests -q
