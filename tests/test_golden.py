@@ -32,7 +32,6 @@ import os
 import re
 import shutil
 import struct
-import sys
 from array import array
 
 import pytest

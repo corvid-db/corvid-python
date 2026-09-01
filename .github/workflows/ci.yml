@@ -54,9 +54,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
-      - run: python -m pip install --upgrade maturin pytest
+      - run: python -m pip install --upgrade "maturin>=1.5,<2.0" pytest
       - name: Build the extension (debug wheel — speed; release is the package job)
-        run: maturin build --debug --out wheels
+        run: maturin build --out wheels
       - run: python -m pip install wheels/corvid_python-*.whl
       - name: Golden suite (256 fixture lines through the OOP surface)
         run: python -m pytest tests -q
@@ -73,7 +73,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: python -m pip install --upgrade maturin pytest
+      - run: python -m pip install --upgrade "maturin>=1.5,<2.0" pytest
       - name: Release wheel build (the publish artifact shape)
         run: maturin build --release --out dist
       - run: python -m pip install dist/corvid_python-*.whl
