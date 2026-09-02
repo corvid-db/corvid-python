@@ -12,7 +12,7 @@ use pyo3::types::PyAny;
 use crate::db::{release, Counter};
 use crate::error::{CResult, CorvidErr, ErrCode};
 use crate::pred::Pred;
-use crate::types::{GeoHit, Page, SchemaField};
+use crate::types::{GeoHit, Page, Row, SchemaField};
 use crate::value::{key_from_py, key_to_py, out, value_from_py, value_to_py};
 
 pub(crate) struct CollInner {
@@ -695,6 +695,36 @@ impl CollectionPy {
                 .map_err(CorvidErr::from)
         })?;
         geo_hits(py, hits)
+    }
+
+    /// DIRECT positional phrase search (spec §4.6's erratum, engine
+    /// v0.3.0's ABI addition; this binding calls the engine method
+    /// directly — no query handle): documents whose `field` TEXT holds
+    /// `phrase` as a consecutive, IN-ORDER run of analyzed tokens, most
+    /// relevant first, ties by key, up to `k`. Rows as :class:`Row`
+    /// objects whose ``score`` is the hit's BM25 phrase sum (the phrase
+    /// scale, NOT the builder's fused RRF scale). ``k == 0`` answers
+    /// ``[]`` — inert, never an error.
+    fn phrase_search(
+        &self,
+        py: Python<'_>,
+        field: &str,
+        phrase: &str,
+        k: usize,
+    ) -> PyResult<Vec<Row>> {
+        let hits = self.with_coll(|coll| {
+            coll.phrase_search(field, phrase, k)
+                .map_err(CorvidErr::from)
+        })?;
+        let mut out = Vec::with_capacity(hits.len());
+        for hit in hits {
+            out.push(Row {
+                key: key_to_py(py, &hit.key)?,
+                score: hit.score,
+                document: value_to_py(py, &hit.document)?,
+            });
+        }
+        Ok(out)
     }
 
     // -- queries ----------------------------------------------------------------

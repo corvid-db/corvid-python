@@ -10,11 +10,10 @@
 # matches by its bigrams — "城市" (city) matches both city notes,
 # "数据库" (database) matches the ML note.
 #
-# Note on phrase matching: the engine's native (Rust) API also has a
-# positional `phrase_search` (adjacent-token windows over stored
-# positions); this binding follows the C ABI v1, which exposes the
-# BM25 source only — positional semantics are beyond its surface;
-# this example shows the bag-of-words ranking that IS the contract.
+# Phrase matching: engine v0.3.0 added the DIRECT positional search
+# to the ABI (consecutive in-order analyzed tokens, stop words
+# collapsing out of adjacency), surfaced here as phrase_search() —
+# Row.score is the BM25 phrase sum, not the builder's fused RRF scale.
 #
 # Run: python examples/text_search.py   (after `maturin develop`)
 
@@ -40,9 +39,18 @@ with Db.open_memory() as db:
         hits = " ".join(f"{r.key}({r.score:.6f})" for r in rows)
         print(f"{label:<28} -> {hits}")
 
+    def phrase(query, label):
+        rows = notes.phrase_search("body", query, 3)
+        hits = " ".join(f"{r.key}({r.score:.6f})" for r in rows)
+        print(f"{label:<28} -> {hits}")
+
     search("quick fox", 'bm25 "quick fox":')
     search("quick dog", 'bm25 "quick dog":')
     search("城市", "bm25 CJK 城市 (city):")
     search("数据库", "bm25 CJK 数据库 (database):")
+
+    phrase("fox jumps over", 'phrase "fox jumps over":')
+    phrase("over jumps fox", "phrase reversed (no match):")
+    phrase("leaps over a sleeping", "phrase stop words collapsed:")
 
     notes.close()

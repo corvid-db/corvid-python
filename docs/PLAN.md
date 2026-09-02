@@ -22,13 +22,13 @@ variants are additive later, decided by the FFI bench).
 | Packaging | `pyproject.toml` (maturin, one cp311-abi3 wheel per platform), README (install-pending note), LICENSE (MIT), `.gitignore` |
 | CI | `.github/workflows/ci.yml` — surface gate + lint + golden suite × 4 platform legs (linux-x64/arm64, macos-arm64, windows-x64) × {3.14, 3.13, 3.12, 3.11} + `maturin build` smoke |
 
-The golden suite: **256/256 fixture lines** across 8 files
+The golden suite: **267/267 fixture lines** across 8 files
 (values 42, mutations 70, queries 40, schema 28, graph 20, geo 19,
 persist 13, admin 24), every line dispatched and every expectation
 checked through the OOP surface, with the same independent pre-scan
 discipline as the C and Node harnesses (a skipped line diverges
 `executed` from the counted total instead of silently passing; a
-totals test pre-scans all files for exactly 256).
+totals test pre-scans all files for exactly 267).
 
 ## 2. Architecture ruling: Rust pyo3 crate, engine compiled in
 
