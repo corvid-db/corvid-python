@@ -9,7 +9,7 @@ synchronous OOP: `Db`, `Collection`, a fluent `Query` builder, and
 path — values map natively (see the value mapping below).
 
 Its correctness story is the engine's **golden suite**: the same
-256-line fixture files the C ABI smoke harness runs are replayed
+267-line fixture files the C ABI smoke harness runs are replayed
 against this binding's public API on every CI run
 (`tests/test_golden.py`).
 
@@ -140,7 +140,7 @@ this gate, not in a user's bug report.
 python -m venv .venv && source .venv/bin/activate
 pip install maturin pytest
 maturin develop               # build the native extension
-pytest tests                  # the golden suite (256 fixture lines)
+pytest tests                  # the golden suite (267 fixture lines)
 cargo fmt --check             # + cargo clippy --all-targets -- -D warnings
 ```
 

@@ -52,7 +52,7 @@ FILES = [
     "persist.txt",
     "admin.txt",
 ]
-TOTAL_LINES = 256
+TOTAL_LINES = 267
 
 
 # ---------------------------------------------------------------------------
@@ -495,6 +495,16 @@ def row_keys(rows) -> list:
     return [str(r.key) for r in rows]
 
 
+def map_keys(v) -> list:
+    """Map key enumeration in the engine's order: ascending key-BYTE
+    order (the BTreeMap iteration order corvid_value_map_keys hands the
+    C ABI; Python dicts preserve insertion order, so the sort is
+    explicit). Non-maps answer [] — inert, the wrong-type convention."""
+    if not isinstance(v, dict):
+        return []
+    return sorted(v.keys(), key=lambda k: k.encode("utf-8"))
+
+
 def check_keys(keys: list, expected: str, ctx: str) -> None:
     want = list_body(expected)
     wanted = split_top(want) if want else []
@@ -626,6 +636,14 @@ def run_line(s: Scenario, op: str, a: list, expected: str, ctx: str) -> None:
         obj = s.rt(a[0])
         obj[a[1]] = parse_literal(a[2])
         assert len(obj.keys()) == int(expected), f"{ctx}: map size"
+        return
+    if op in ("VMAP_KEYS", "GET_KEYS"):
+        # The v0.3.0 key-iterator ops: VMAP_KEYS over a storage-round-tripped
+        # literal (rt inserts + gets), GET_KEYS over the stored document —
+        # ascending key-byte order; empty map, non-maps, scalars answer [].
+        v = s.docs().get(a[0]) if op == "GET_KEYS" else s.rt(a[0])
+        assert v is not None, f"{ctx}: {op} on an absent document"
+        check_keys(map_keys(v), expected, ctx)
         return
     if op == "NULLFREES":
         # Every close() is idempotent — the free(NULL) analog.
@@ -825,6 +843,17 @@ def run_line(s: Scenario, op: str, a: list, expected: str, ctx: str) -> None:
     if op == "QTEXT":
         rows = s.docs().query().text(a[0], text_body(a[1]), int(a[2])).run()
         check_keys(row_keys(rows), expected, ctx)
+        return
+    if op in ("PHRASE", "PHRASE_K0"):
+        # The v0.3.0 direct positional search through phrase_search():
+        # order-sensitive adjacency, BM25 phrase scores in the suffix;
+        # PHRASE_K0 is the inert k==0 shape — an EMPTY result, no error.
+        rows = s.docs().phrase_search(a[0], text_body(a[1]), int(a[2]))
+        key_part, suffix = split_expected(expected)
+        check_keys(row_keys(rows), key_part, ctx)
+        check_scores([r.score for r in rows], suffix, ctx)
+        if op == "PHRASE_K0":
+            assert len(rows) == 0, f"{ctx}: k == 0 must answer empty"
         return
     if op in ("HYBRID", "HYBRID_F"):
         tagged = op == "HYBRID_F"
@@ -1166,7 +1195,7 @@ def test_golden_suite(file_name):
 
 
 def test_golden_suite_totals():
-    """All 8 fixture files, 256 executable lines — counted by an
+    """All 8 fixture files, 267 executable lines — counted by an
     independent pre-scan, so a truncated or extended fixture fails here."""
     total = 0
     for file_name in FILES:

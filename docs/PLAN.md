@@ -18,24 +18,24 @@ variants are additive later, decided by the FFI bench).
 | --- | --- |
 | The pyo3 crate (engine-binding layer AND idiom layer — see §3) | `src/*.rs` — `DbPy`/`CollectionPy`/`QueryPy`, value mapping, error mapping, predicates |
 | The public package | `python/corvid/__init__.py` re-exports `corvid._native`; `__init__.pyi` + `py.typed` carry the full typing |
-| The golden-suite port | `tests/test_golden.py` driving `tests/golden/*.txt` (vendored byte-identical from the v0.2.2 release — the pinned engine tag; the same fixtures the C smoke suite and corvid-node run) |
+| The golden-suite port | `tests/test_golden.py` driving `tests/golden/*.txt` (vendored byte-identical from the v0.3.0 release — the pinned engine tag; the same fixtures the C smoke suite and corvid-node run) |
 | Packaging | `pyproject.toml` (maturin, one cp311-abi3 wheel per platform), README (install-pending note), LICENSE (MIT), `.gitignore` |
 | CI | `.github/workflows/ci.yml` — surface gate + lint + golden suite × 4 platform legs (linux-x64/arm64, macos-arm64, windows-x64) × {3.14, 3.13, 3.12, 3.11} + `maturin build` smoke |
 
-The golden suite: **256/256 fixture lines** across 8 files
+The golden suite: **267/267 fixture lines** across 8 files
 (values 42, mutations 70, queries 40, schema 28, graph 20, geo 19,
 persist 13, admin 24), every line dispatched and every expectation
 checked through the OOP surface, with the same independent pre-scan
 discipline as the C and Node harnesses (a skipped line diverges
 `executed` from the counted total instead of silently passing; a
-totals test pre-scans all files for exactly 256).
+totals test pre-scans all files for exactly 267).
 
 ## 2. Architecture ruling: Rust pyo3 crate, engine compiled in
 
 Two architectures were on the table:
 
 1. **(chosen)** A Rust pyo3 crate that links the engine crate directly
-   (`corvid = { git = "https://github.com/corvid-db/corvid.git", tag = "v0.2.2" }`
+   (`corvid = { git = "https://github.com/corvid-db/corvid.git", tag = "v0.3.0" }`
    — corvid is not on crates.io) and exposes the OOP surface through
    native pyo3 classes, built into a Python extension module by
    maturin.
@@ -220,4 +220,4 @@ Documented corners:
 | Variadic `and_`/`or_` (trailing underscores) | Python keywords; mirrors the JS binding's variadic `and`/`or` |
 | Counter + Arc exclusivity for `compact` | mirrors the ABI §4.13 gate exactly; pinned by admin.txt |
 | pyo3 0.29, maturin 1.x | current crates.io stable lines |
-| Vendored golden fixtures (byte-identical to the v0.2.2 tag — the pinned engine version) | stable text; the suite must run offline and per-PR (verified identical to `crates/corvid-ffi/golden/`) |
+| Vendored golden fixtures (byte-identical to the v0.3.0 tag — the pinned engine version) | stable text; the suite must run offline and per-PR (verified identical to `crates/corvid-ffi/golden/`) |
