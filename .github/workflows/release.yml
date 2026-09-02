@@ -1,0 +1,155 @@
+name: Release PyPI
+
+# The corvid-python publish flow: a tag push (vX.Y.Z — must equal
+# pyproject.toml's [project] version) builds the SAME wheel matrix ci.yml
+# covers (linux x64/arm64, macos arm64, windows x64 — abi3 cp311, so one
+# wheel per platform covers every Python >= 3.11) plus the sdist on the
+# linux-x64 leg; ONE publish job then collects the artifacts and uploads
+# them with `maturin upload --skip-existing`.
+#
+# Authentication is PyPI TRUSTED PUBLISHING (OIDC): the publish job grants
+# only `id-token: write`; maturin detects the GitHub OIDC environment and
+# exchanges the short-lived token for an upload credential — NO token
+# secret is stored in the repo. One-time registration on pypi.org
+# (account -> Publishing -> "Add a new pending publisher", see
+# scripts/bindings/README.md in the engine repo):
+#   PyPI project name: corvid-python
+#   Owner:             corvid-db
+#   Repository:        corvid-python
+#   Workflow name:     release.yml
+#   Environment name:  (leave blank — omitted here on purpose; the workflow
+#                      runs without a GitHub environment, and one can be
+#                      added later by registering it on both sides)
+# (NB: maturin's upload/publish commands print a deprecation warning that
+# points at uv publish — harmless; the upload path, OIDC included, is
+# unchanged.)
+#
+# API-TOKEN FALLBACK instead of trusted publishing (only if preferred):
+# create a token at https://pypi.org/manage/account/token/ and:
+#   gh secret set PYPI_API_TOKEN -R corvid-db/corvid-python
+# then give the upload step below:
+#   env:
+#     MATURIN_PYPI_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+# (and drop id-token: write from the job).
+#
+# Dry-run (no publishing, e.g. after touching this file): dispatch the
+# workflow manually with `dry_run` checked — the whole wheel matrix, the
+# sdist, the artifact merge, and the version verification all run; the
+# upload step is skipped.
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Build wheels + sdist + verify, but skip the PyPI upload
+        type: boolean
+        default: false
+
+permissions: {}
+
+# Never cancel mid-run: a re-pushed tag queues behind the in-flight publish.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: build ${{ matrix.target }}${{ matrix.sdist && ' + sdist' || '' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # The wheel platform matrix mirrors ci.yml's test matrix exactly.
+        # macos-x64 retired with GitHub's macos-13 runners — no x86_64
+        # darwin runner exists (same as corvid-node's matrix).
+        include:
+          - { target: linux-x64, runs-on: ubuntu-latest, sdist: true }
+          - { target: linux-arm64, runs-on: ubuntu-24.04-arm, sdist: false }
+          - { target: macos-arm64, runs-on: macos-latest, sdist: false }
+          - { target: windows-x64, runs-on: windows-latest, sdist: false }
+    runs-on: ${{ matrix.runs-on }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+      - run: python -m pip install --upgrade "maturin>=1.5,<2.0"
+      - name: Build the release wheel (the publish artifact shape)
+        run: maturin build --release --out dist
+      - name: Build the sdist (one leg only — PyPI wants a single source tarball)
+        if: matrix.sdist == true
+        run: maturin sdist --out dist
+      - name: Upload distributions as workflow artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ matrix.target }}
+          path: dist/*
+          if-no-files-found: error
+
+  publish:
+    name: collect + upload to PyPI (trusted publishing)
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      # PyPI trusted publishing (OIDC): the ONLY credential this job needs.
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+      - run: python -m pip install --upgrade "maturin>=1.5,<2.0"
+      - name: Tag must match the pyproject.toml version
+        run: |
+          VERSION=$(awk '/^\[project\]/{f=1;next} /^\[/{f=0} f && /^version = /{gsub(/[";]/,"",$3); print $3; exit}' pyproject.toml)
+          if [ -z "$VERSION" ]; then
+            echo "::error::version not found in pyproject.toml [project]"
+            exit 1
+          fi
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            # no tag context on dispatch; the equality is enforced on tag pushes
+            echo "dispatch (dry_run=${{ inputs.dry_run }}): pyproject version ${VERSION}"
+          else
+            TAG="${GITHUB_REF_NAME#v}"
+            echo "tag: ${GITHUB_REF_NAME} (version part: ${TAG}), pyproject version: ${VERSION}"
+            if [ "$TAG" != "$VERSION" ]; then
+              echo "::error::tag ${GITHUB_REF_NAME} does not match pyproject version ${VERSION}"
+              exit 1
+            fi
+          fi
+      - name: Download every matrix distribution
+        uses: actions/download-artifact@v4
+        with:
+          pattern: dist-*
+          path: dist
+          merge-multiple: true
+      - name: Inventory (the exact upload set)
+        run: |
+          ls -l dist/
+          echo "wheels: $(find dist -name '*.whl' | wc -l | tr -d ' '), sdists: $(find dist -name '*.tar.gz' | wc -l | tr -d ' ')"
+      - name: "dry-run: upload skipped"
+        if: inputs.dry_run == true
+        run: >
+          echo "dry-run: upload skipped — wheel matrix, sdist, artifact
+          merge, and version verification all ran; nothing uploaded."
+      # maturin upload with no MATURIN_PYPI_TOKEN/username configured and the
+      # OIDC env vars present (id-token: write) authenticates via trusted
+      # publishing. --skip-existing keeps re-runs of an already-uploaded file
+      # from failing the job (per-file idempotence).
+      - name: Upload to PyPI
+        if: inputs.dry_run != true
+        run: maturin upload --skip-existing dist/*
+      - name: Verify the publish (pypi.org JSON API)
+        if: inputs.dry_run != true
+        run: |
+          VERSION=$(awk '/^\[project\]/{f=1;next} /^\[/{f=0} f && /^version = /{gsub(/[";]/,"",$3); print $3; exit}' pyproject.toml)
+          curl -sSf "https://pypi.org/pypi/corvid-python/$VERSION/json" \
+            | jq -r '"corvid-python " + .info.version + " live: " + .info.release_url'
