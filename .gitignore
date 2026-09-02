@@ -21,3 +21,4 @@ python/corvid/_native.*
 # test scratch
 tests/work/
 .pytest_cache/
+wheels/
