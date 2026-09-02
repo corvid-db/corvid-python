@@ -143,13 +143,15 @@ jobs:
         run: >
           echo "dry-run: upload skipped — wheel matrix, sdist, artifact
           merge, and version verification all ran; nothing uploaded."
-      # maturin upload with no MATURIN_PYPI_TOKEN/username configured and the
-      # OIDC env vars present (id-token: write) authenticates via trusted
-      # publishing. --skip-existing keeps re-runs of an already-uploaded file
-      # from failing the job (per-file idempotence).
+      # The canonical trusted-publishing path (maturin's own deprecation
+      # notice points here): PyPA's action exchanges the GitHub OIDC token
+      # itself — no credentials configured, and it is idempotent-friendly
+      # via skip-existing for re-runs of an already-uploaded file.
       - name: Upload to PyPI
         if: inputs.dry_run != true
-        run: maturin upload --skip-existing dist/*
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          skip-existing: true
       - name: Verify the publish (pypi.org JSON API)
         if: inputs.dry_run != true
         run: |
