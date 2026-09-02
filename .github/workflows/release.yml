@@ -97,6 +97,9 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # Must match the pending publisher's environment field on pypi.org
+    # (the standard PyPI guide registers the environment as "pypi").
+    environment: pypi
     permissions:
       contents: read
       # PyPI trusted publishing (OIDC): the ONLY credential this job needs.
