@@ -21,7 +21,7 @@ pyo3 = { version = "0.29", features = ["abi3-py311"] }
 
 # The engine, pinned to the exact release tag (docs/PLAN.md §2: the
 # binding pins exact engine tags; corvid is not on crates.io).
-corvid = { git = "https://github.com/corvid-db/corvid.git", tag = "v0.3.0" }
+corvid = { git = "https://github.com/corvid-db/corvid.git", tag = "v0.3.1" }
 
 [dev-dependencies]
 # Test-only: the variant-inventory snapshot test (src/error.rs)
