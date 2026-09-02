@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "corvid-python"
-version = "0.3.4"
+version = "0.4.0"
 description = "Python binding for the corvid embedded database — the engine compiled in via pyo3, exposed as idiomatic OOP"
 readme = "README.md"
 license = "MIT"
