@@ -35,9 +35,11 @@ totals test pre-scans all files for exactly 267).
 Two architectures were on the table:
 
 1. **(chosen)** A Rust pyo3 crate that links the engine crate directly
-   (`corvid = { git = "https://github.com/corvid-db/corvid.git", tag = "v0.3.2" }`
-   — corvid is not on crates.io) and exposes the OOP surface through
-   native pyo3 classes, built into a Python extension module by
+   (`corvid-db = { git = "https://github.com/corvid-db/corvid.git", tag = "v0.3.2" }`
+   — the engine package is `corvid-db` with lib ident `corvid`; bare
+   `corvid` on crates.io is an unrelated crate) and exposes the OOP
+   surface through native pyo3 classes, built into a Python extension
+   module by
    maturin.
 2. Python-side FFI (ctypes/cffi against the release `cdylib`
    artifacts, or unpacking wheels of them).
