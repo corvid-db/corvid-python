@@ -17,6 +17,7 @@
 #
 # Run: python examples/text_search.py   (after `maturin develop`)
 
+# docs:begin:text_search
 from corvid import Db
 
 CORPUS = [
@@ -54,3 +55,4 @@ with Db.open_memory() as db:
     phrase("leaps over a sleeping", "phrase stop words collapsed:")
 
     notes.close()
+# docs:end:text_search

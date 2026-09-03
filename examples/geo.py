@@ -16,6 +16,7 @@
 #
 # Run: python examples/geo.py   (after `maturin develop`)
 
+# docs:begin:geo
 from corvid import Db
 
 CITIES = [
@@ -43,3 +44,4 @@ with Db.open_memory() as db:
          places.geo_nearest("loc", 52.52, 13.40, 2))
 
     places.close()
+# docs:end:geo

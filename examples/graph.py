@@ -10,6 +10,7 @@
 #
 # Run: python examples/graph.py   (after `maturin develop`)
 
+# docs:begin:graph
 from corvid import Db
 
 with Db.open_memory() as db:
@@ -43,3 +44,4 @@ with Db.open_memory() as db:
     show("traverse(ga, 2 hops) after", nodes.traverse("ga", "parent_of", 2))
 
     nodes.close()
+# docs:end:graph

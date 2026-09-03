@@ -22,6 +22,7 @@
 #
 # Run: python examples/vector_index.py   (after `maturin develop`)
 
+# docs:begin:vector_index
 import os
 import tempfile
 from array import array
@@ -75,3 +76,4 @@ with tempfile.TemporaryDirectory() as tmp:
         items = db.collection("items")
         run_query(items, "v_disk", True, "ann on-disk after reopen:")
         items.close()
+# docs:end:vector_index
