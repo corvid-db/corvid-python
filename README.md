@@ -15,21 +15,20 @@ against this binding's public API on every CI run
 
 ## Install
 
-Pending first publish: the package is **not on PyPI yet** — everything
-is prepared (maturin wheel config, one abi3 wheel per platform), and
-publishing waits on the first release tag (docs/PLAN.md §6). Until
-then, build from source — Python 3.11–3.14 (the floor is 3.11; CI
-exercises 3.14/3.13/3.12/3.11 on every wheel platform), Rust ≥ 1.88,
-and a C toolchain:
+```sh
+pip install corvid-python
+```
+
+Published to PyPI by the release workflow (maturin-built abi3 wheels,
+one `cp311` wheel per platform covering every Python ≥ 3.11; the
+matrix ships `linux-x64` / `linux-arm64` / `macos-arm64` /
+`windows-x64`). To build from source instead — Python 3.11–3.14 (CI
+exercises 3.14/3.13/3.12/3.11), Rust ≥ 1.88, and a C toolchain:
 
 ```sh
 pip install maturin
 maturin develop --release    # into the active venv
 ```
-
-The wheel is abi3 (cp311), so one wheel per platform covers every
-Python ≥ 3.11. Planned platform matrix: `linux-x64` /
-`linux-arm64` / `macos-arm64` / `windows-x64`.
 
 ## Usage
 
@@ -81,16 +80,13 @@ public API is fully typed.
 ## Examples
 
 Six runnable programs in [`examples/`](examples/) — one per concept,
-deterministic output, executed on every CI leg:
-
-| File | What it shows |
-| --- | --- |
-| `quickstart.py` | open, insert 3 docs, kNN vector query, print |
-| `hybrid.py` | filter + vector + BM25, RRF fusion, MMR rerank, limit |
-| `vector_index.py` | in-memory / on-disk / binary-quantized HNSW vs exact, reopen |
-| `text_search.py` | BM25 ranking, English + CJK (bigram segmentation) |
-| `graph.py` | link/neighbors/traverse + the delete cascade |
-| `geo.py` | radius / bbox / nearest-k over real coordinates (haversine km) |
+with deterministic output, executed on every CI leg: the quickstart
+(open, insert, kNN), **hybrid** (filter + vector + BM25, RRF fusion,
+MMR rerank), **vector-index** (in-memory / on-disk /
+binary-quantized HNSW vs exact, across a reopen), **text-search**
+(BM25, English + CJK bigram segmentation), **graph**
+(link/neighbors/traverse + the delete cascade), and **geo**
+(radius / bbox / nearest-k over real coordinates).
 
 ```sh
 maturin develop && python examples/hybrid.py
